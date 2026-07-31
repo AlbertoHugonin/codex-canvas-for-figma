@@ -1,0 +1,13 @@
+{
+  "name": "Codex Canvas",
+  "id": "1526384507631092841",
+  "api": "1.0.0",
+  "main": "dist/plugin/code.js",
+  "ui": "dist/plugin/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "devAllowedDomains": ["ws://localhost:3845"]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "codex-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A local-first Codex client embedded in Figma, with direct Plugin API access.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "start": "node dist/bridge/index.js",
+    "dev": "npm run build && npm run start"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.119.0",
+    "@types/node": "^24.1.0",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.25.8",
+    "typescript": "^5.9.2"
+  }
+}
