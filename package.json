@@ -7,10 +7,11 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
-    "start": "node dist/bridge/index.js",
-    "dev": "npm run build && npm run start"
+    "start": "npm run build && node dist/bridge/index.js"
   },
   "dependencies": {
+    "@openai/codex": "0.147.0",
+    "lucide": "^1.30.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

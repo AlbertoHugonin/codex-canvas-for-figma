@@ -435,6 +435,15 @@ figma.ui.onmessage = async (message: unknown) => {
     return;
   }
 
+  if (typed.type === "external.open" && typeof typed.url === "string") {
+    const url = new URL(typed.url);
+    if (url.protocol !== "https:" || url.hostname !== "auth.openai.com") {
+      throw new Error("Unsupported external URL");
+    }
+    figma.openExternal(url.toString());
+    return;
+  }
+
   if (typed.type === "tool.run") {
     await runTool(typed as unknown as ToolRequest);
   }

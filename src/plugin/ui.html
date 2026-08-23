@@ -1,704 +1,151 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Codex Canvas</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        font-size: 12px;
-      }
-
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        height: 100vh;
-        display: grid;
-        grid-template-rows: auto auto auto 1fr auto;
-        background: var(--figma-color-bg, #fff);
-        color: var(--figma-color-text, #1e1e1e);
-      }
-
-      button, textarea, input, select { font: inherit; }
-      button { cursor: pointer; }
-
-      header {
-        height: 46px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 12px;
-        border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
-      }
-
-      .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-      .mark {
-        width: 24px; height: 24px; border-radius: 7px;
-        display: grid; place-items: center;
-        color: white; background: linear-gradient(135deg, #7c3aed, #2563eb);
-        font-size: 11px; font-weight: 700;
-      }
-      .connection { display: flex; align-items: center; gap: 6px; color: var(--figma-color-text-secondary, #777); }
-      .dot { width: 7px; height: 7px; border-radius: 50%; background: #d14343; }
-      .dot.online { background: #22a06b; }
-      .icon-button {
-        border: 0; background: transparent; color: inherit; border-radius: 6px;
-        padding: 6px 8px;
-      }
-      .icon-button:hover { background: var(--figma-color-bg-hover, #f2f2f2); }
-
-      #model-bar {
-        display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 8px;
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
-        background: var(--figma-color-bg-secondary, #f7f7f7);
-      }
-      .model-field { display: grid; gap: 4px; min-width: 0; }
-      .model-field span {
-        color: var(--figma-color-text-tertiary, #8a8a8a);
-        font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-      }
-      .model-field select {
-        width: 100%; min-width: 0; max-width: 100%; height: 28px;
-        border: 1px solid var(--figma-color-border, #d6d6d6); border-radius: 6px;
-        padding: 0 24px 0 7px; outline: 0;
-        color: var(--figma-color-text, #1e1e1e); background: var(--figma-color-bg, #fff);
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      }
-      .model-field select:focus { border-color: var(--figma-color-border-brand-strong, #0d99ff); }
-      .model-field select:disabled { opacity: .55; cursor: default; }
-
-      #context-bar {
-        min-height: 34px;
-        padding: 8px 12px;
-        border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
-        color: var(--figma-color-text-secondary, #6b6b6b);
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-
-      #messages { overflow-y: auto; padding: 14px 12px 24px; }
-      .empty {
-        min-height: 100%; display: grid; place-content: center; text-align: center;
-        color: var(--figma-color-text-secondary, #6b6b6b); padding: 28px;
-      }
-      .empty strong { color: var(--figma-color-text, #1e1e1e); font-size: 14px; margin-bottom: 6px; }
-      .message { margin: 0 0 14px; line-height: 1.5; overflow-wrap: anywhere; }
-      .message-content { user-select: text; -webkit-user-select: text; }
-      .message.user {
-        margin-left: 42px; padding: 9px 11px; border-radius: 12px 12px 3px 12px;
-        background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff);
-      }
-      .message.user .message-content, .message.error .message-content { white-space: pre-wrap; }
-      .message.agent { margin-right: 18px; }
-      .message.error { color: var(--figma-color-text-danger, #d14343); }
-      .message.agent + .message.agent {
-        padding-top: 12px;
-        border-top: 1px solid var(--figma-color-border, #e5e5e5);
-      }
-      .message.agent p { margin: 0 0 9px; }
-      .message.agent p:last-child { margin-bottom: 0; }
-      .message.agent h1, .message.agent h2, .message.agent h3 {
-        margin: 14px 0 7px; line-height: 1.25; font-weight: 650;
-      }
-      .message.agent h1:first-child, .message.agent h2:first-child, .message.agent h3:first-child { margin-top: 0; }
-      .message.agent h1 { font-size: 15px; }
-      .message.agent h2 { font-size: 14px; }
-      .message.agent h3 { font-size: 13px; }
-      .message.agent ul, .message.agent ol { margin: 6px 0 10px; padding-left: 20px; }
-      .message.agent li { margin: 3px 0; padding-left: 2px; }
-      .message.agent blockquote {
-        margin: 8px 0 10px; padding: 2px 0 2px 9px;
-        border-left: 2px solid var(--figma-color-border-brand, #0d99ff);
-        color: var(--figma-color-text-secondary, #6b6b6b);
-      }
-      .message.agent code {
-        padding: 1px 4px; border-radius: 4px;
-        background: var(--figma-color-bg-secondary, #f2f2f2);
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
-      }
-      .message.agent pre {
-        margin: 8px 0 10px; padding: 9px 10px; overflow-x: auto;
-        border: 1px solid var(--figma-color-border, #dedede); border-radius: 7px;
-        background: var(--figma-color-bg-secondary, #f5f5f5);
-        white-space: pre; user-select: text; -webkit-user-select: text;
-      }
-      .message.agent pre code { padding: 0; background: transparent; }
-      .message-agent-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
-      .copy-message {
-        display: inline-flex; align-items: center; gap: 4px;
-        border: 0; border-radius: 5px; padding: 3px 6px;
-        color: var(--figma-color-text-secondary, #6b6b6b); background: transparent;
-        font-size: 10px;
-      }
-      .copy-message:hover { background: var(--figma-color-bg-hover, #f2f2f2); color: var(--figma-color-text, #1e1e1e); }
-      .tool-status {
-        display: inline-flex; align-items: center; gap: 7px; margin: -4px 0 12px;
-        padding: 5px 8px; border-radius: 7px;
-        color: var(--figma-color-text-secondary, #6b6b6b);
-        background: var(--figma-color-bg-secondary, #f5f5f5);
-      }
-      .spinner {
-        width: 10px; height: 10px; border: 1.5px solid currentColor; border-right-color: transparent;
-        border-radius: 50%; animation: spin .8s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
-
-      .composer {
-        padding: 10px 12px 12px;
-        border-top: 1px solid var(--figma-color-border, #e5e5e5);
-        background: var(--figma-color-bg, #fff);
-      }
-      .input-shell {
-        border: 1px solid var(--figma-color-border-strong, #b3b3b3); border-radius: 10px;
-        padding: 8px; background: var(--figma-color-bg, #fff);
-      }
-      .input-shell:focus-within { border-color: var(--figma-color-border-brand-strong, #0d99ff); }
-      textarea {
-        display: block; width: 100%; min-height: 56px; max-height: 130px; resize: none;
-        border: 0; outline: 0; padding: 0 2px 8px; background: transparent; color: inherit;
-      }
-      .composer-actions { display: flex; justify-content: space-between; align-items: center; }
-      .hint { color: var(--figma-color-text-tertiary, #999); font-size: 10px; }
-      .send {
-        border: 0; border-radius: 7px; padding: 6px 11px; font-weight: 600;
-        color: var(--figma-color-text-onbrand, white); background: var(--figma-color-bg-brand, #0d99ff);
-      }
-      .send:disabled { opacity: .45; cursor: default; }
-
-      #setup {
-        position: fixed; inset: 0; z-index: 5; display: none; place-content: center;
-        padding: 26px; background: var(--figma-color-bg, #fff);
-      }
-      #setup.visible { display: grid; }
-      .setup-card { max-width: 330px; }
-      .setup-card h2 { margin: 0 0 8px; font-size: 16px; }
-      .setup-card p { margin: 0 0 16px; color: var(--figma-color-text-secondary, #6b6b6b); line-height: 1.45; }
-      .setup-card input {
-        width: 100%; border: 1px solid var(--figma-color-border-strong, #aaa); border-radius: 7px;
-        padding: 9px; background: transparent; color: inherit; outline: 0;
-      }
-      .setup-card button {
-        width: 100%; margin-top: 9px; padding: 9px; border: 0; border-radius: 7px;
-        color: white; background: var(--figma-color-bg-brand, #0d99ff); font-weight: 600;
-      }
-      #setup-error { min-height: 18px; margin-top: 8px; color: var(--figma-color-text-danger, #d14343); }
-    </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>/*__CODEX_CANVAS_STYLES__*/</style>
   </head>
   <body>
-    <header>
-      <div class="brand"><span class="mark">CX</span> Codex Canvas</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div class="connection"><span id="status-dot" class="dot"></span><span id="status-text">offline</span></div>
-        <button id="new-thread" class="icon-button" title="New conversation">＋</button>
-      </div>
-    </header>
-    <div id="model-bar">
-      <label class="model-field">
-        <span>Model</span>
-        <select id="model-select" disabled><option>Loading…</option></select>
-      </label>
-      <label class="model-field">
-        <span>Reasoning</span>
-        <select id="effort-select" disabled><option>—</option></select>
-      </label>
-    </div>
-    <div id="context-bar">No layer selected</div>
-    <main id="messages">
-      <div id="empty" class="empty"><strong>Edit the canvas with Codex</strong><span>Select a frame and describe what you want to change.</span></div>
-    </main>
-    <form id="composer" class="composer">
-      <div class="input-shell">
-        <textarea id="prompt" placeholder="e.g. Clean up this card and fix its Auto Layout"></textarea>
-        <div class="composer-actions">
-          <span class="hint">Enter to run · ⇧ Enter for a new line</span>
-          <button id="send" class="send" type="submit">Run</button>
+    <div id="app">
+      <section id="chat-view" class="view hidden" aria-label="Conversation">
+        <header class="toolbar">
+          <button id="workspace-open" class="workspace-trigger" type="button" title="Open workspace settings">
+            <span data-icon="folder"></span>
+            <span id="workspace-name">No workspace</span>
+          </button>
+          <div class="toolbar-actions">
+            <span id="connection-indicator" class="connection-indicator" title="Offline" aria-label="Offline"></span>
+            <button id="settings-open" class="icon-button" type="button" title="Settings" aria-label="Settings">
+              <span data-icon="settings"></span>
+            </button>
+          </div>
+        </header>
+
+        <div class="thread-row">
+          <select id="thread-select" aria-label="Conversation" disabled></select>
+          <button id="new-thread" class="icon-button" type="button" title="New conversation" aria-label="New conversation" disabled>
+            <span data-icon="plus"></span>
+          </button>
         </div>
-      </div>
-    </form>
 
-    <section id="setup" class="visible">
-      <div class="setup-card">
-        <h2>Connect local Codex</h2>
-        <p>Run <code>npm start</code> in the project and paste the token shown in the terminal. It is stored only on your computer.</p>
-        <input id="token" type="password" placeholder="Bridge token" autocomplete="off" />
-        <button id="connect" type="button">Connect</button>
-        <div id="setup-error"></div>
-      </div>
-    </section>
+        <div id="context-bar" class="context-bar" title="No layer selected">No layer selected</div>
 
-    <script>
-      const BRIDGE_URL = "ws://localhost:3845";
-      const $ = (id) => document.getElementById(id);
-      let socket = null;
-      let bridgeToken = "";
-      let busy = false;
-      let activeAgentMessage = null;
-      let toolStatus = null;
-      let latestContext = null;
-      let modelCatalog = [];
-      let savedModel = "";
-      let savedEffort = "";
+        <main id="messages" class="messages" aria-live="polite">
+          <div id="empty" class="empty">New conversation</div>
+        </main>
 
-      const effortLabels = {
-        none: "None",
-        minimal: "Minimal",
-        low: "Low",
-        medium: "Medium · recommended",
-        high: "High",
-        xhigh: "Extra high",
-        max: "Maximum",
-        ultra: "Ultra"
-      };
+        <form id="composer" class="composer">
+          <textarea id="prompt" rows="1" placeholder="Ask Codex..." aria-label="Message"></textarea>
+          <button id="send" class="send-button" type="submit" title="Send" aria-label="Send" disabled>
+            <span data-icon="send"></span>
+          </button>
+        </form>
+      </section>
 
-      function setConnection(online, label) {
-        $("status-dot").classList.toggle("online", online);
-        $("status-text").textContent = label;
-        $("send").disabled = !online || busy;
-      }
+      <section id="settings-view" class="view hidden" aria-label="Settings">
+        <header class="settings-header">
+          <button id="settings-back" class="icon-button" type="button" title="Back to conversation" aria-label="Back to conversation">
+            <span data-icon="arrow-left"></span>
+          </button>
+          <h1>Settings</h1>
+        </header>
 
-      function showSetup(error = "") {
-        $("setup").classList.add("visible");
-        $("setup-error").textContent = error;
-      }
+        <div class="settings-content">
+          <section class="settings-section">
+            <div class="section-heading">
+              <h2>Workspace</h2>
+              <span id="workspace-mode" class="section-status">Figma only</span>
+            </div>
+            <label class="field" for="workspace-root">
+              <span>Absolute folder path</span>
+              <input id="workspace-root" type="text" placeholder="C:\Projects\MyApp" spellcheck="false" />
+            </label>
+            <button id="workspace-clear" class="text-button" type="button">Clear</button>
+          </section>
 
-      function hideSetup() {
-        $("setup").classList.remove("visible");
-        $("setup-error").textContent = "";
-      }
+          <section class="settings-section">
+            <h2>Codex</h2>
+            <label class="field" for="model-select">
+              <span>Model</span>
+              <select id="model-select" disabled><option>Loading...</option></select>
+            </label>
+            <label class="field" for="effort-select">
+              <span>Reasoning</span>
+              <select id="effort-select" disabled><option>-</option></select>
+            </label>
+          </section>
 
-      function saveModelSettings() {
-        const model = $("model-select").value;
-        const effort = $("effort-select").value;
-        savedModel = model;
-        savedEffort = effort;
-        parent.postMessage({ pluginMessage: { type: "settings.save-model", model, effort } }, "*");
-      }
+          <section class="settings-section account-section" aria-labelledby="account-heading">
+            <div class="section-heading">
+              <h2 id="account-heading">ChatGPT account</h2>
+              <span id="account-status" class="section-status" role="status">Offline</span>
+            </div>
 
-      function populateEfforts(preferredEffort = "") {
-        const model = modelCatalog.find((entry) => entry.id === $("model-select").value);
-        const effortSelect = $("effort-select");
-        effortSelect.replaceChildren();
-        const efforts = Array.isArray(model?.efforts) ? model.efforts : [];
-        for (const effort of efforts) {
-          const option = document.createElement("option");
-          option.value = effort.value;
-          option.textContent = effortLabels[effort.value] || effort.value;
-          option.title = effort.description || "";
-          effortSelect.appendChild(option);
-        }
-        const desiredEffort = efforts.some((effort) => effort.value === preferredEffort)
-          ? preferredEffort
-          : model?.defaultEffort;
-        if (desiredEffort && efforts.some((effort) => effort.value === desiredEffort)) {
-          effortSelect.value = desiredEffort;
-        }
-        effortSelect.disabled = !efforts.length || busy;
-      }
+            <div id="account-loading" class="account-loading" hidden>
+              <span class="spinner" aria-hidden="true"></span>
+              <span>Checking account...</span>
+            </div>
 
-      function populateModels(message) {
-        modelCatalog = Array.isArray(message.models) ? message.models : [];
-        const modelSelect = $("model-select");
-        modelSelect.replaceChildren();
-        for (const model of modelCatalog) {
-          const option = document.createElement("option");
-          option.value = model.id;
-          option.textContent = model.displayName || model.id;
-          modelSelect.appendChild(option);
-        }
-        const desiredModel = modelCatalog.some((model) => model.id === savedModel)
-          ? savedModel
-          : modelCatalog.some((model) => model.id === message.selectedModel)
-            ? message.selectedModel
-            : (modelCatalog.find((model) => model.isDefault)?.id || modelCatalog[0]?.id || "");
-        modelSelect.value = desiredModel;
-        modelSelect.disabled = !modelCatalog.length || busy;
-        populateEfforts(savedEffort || message.selectedEffort || "");
-        if (modelCatalog.length) saveModelSettings();
-      }
+            <div id="account-signed-out" class="account-state" hidden>
+              <button id="account-connect" class="primary-button" type="button" disabled>
+                Connect ChatGPT
+              </button>
+            </div>
 
-      function setModelControlsDisabled(disabled) {
-        $("model-select").disabled = disabled || !modelCatalog.length;
-        $("effort-select").disabled = disabled || !$("effort-select").options.length;
-      }
+            <div id="account-challenge" class="account-state" hidden>
+              <a
+                id="account-verification-link"
+                class="account-link"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open ChatGPT sign-in page"
+              ></a>
+              <div class="account-code-group">
+                <span>Device code</span>
+                <code id="account-user-code" class="account-code" tabindex="0" aria-label="ChatGPT device code"></code>
+              </div>
+              <button id="account-cancel" class="text-button" type="button" disabled>Cancel</button>
+            </div>
 
-      function appendInlineMarkdown(parent, text) {
-        const tokenPattern = /(`[^`\n]+`|\*\*[^*\n]+\*\*|__[^_\n]+__|\[[^\]\n]+\]\(https?:\/\/[^)\s]+\))/g;
-        let cursor = 0;
-        let match;
-        while ((match = tokenPattern.exec(text)) !== null) {
-          if (match.index > cursor) parent.appendChild(document.createTextNode(text.slice(cursor, match.index)));
-          const token = match[0];
-          if (token.startsWith("`")) {
-            const code = document.createElement("code");
-            code.textContent = token.slice(1, -1);
-            parent.appendChild(code);
-          } else if (token.startsWith("**") || token.startsWith("__")) {
-            const strong = document.createElement("strong");
-            strong.textContent = token.slice(2, -2);
-            parent.appendChild(strong);
-          } else {
-            const parts = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
-            if (parts) {
-              const link = document.createElement("a");
-              link.textContent = parts[1];
-              link.href = parts[2];
-              link.target = "_blank";
-              link.rel = "noopener noreferrer";
-              parent.appendChild(link);
-            } else {
-              parent.appendChild(document.createTextNode(token));
-            }
-          }
-          cursor = match.index + token.length;
-        }
-        if (cursor < text.length) parent.appendChild(document.createTextNode(text.slice(cursor)));
-      }
+            <div id="account-signed-in" class="account-state" hidden>
+              <div class="account-identity">
+                <strong id="account-identity">ChatGPT</strong>
+                <span id="account-plan"></span>
+              </div>
+              <button id="account-logout" class="secondary-button" type="button" disabled>Sign out</button>
+            </div>
 
-      function appendTextLines(parent, lines) {
-        lines.forEach((line, index) => {
-          if (index) parent.appendChild(document.createElement("br"));
-          appendInlineMarkdown(parent, line);
-        });
-      }
+            <div id="account-error" class="account-error" role="alert"></div>
+          </section>
 
-      function renderMarkdown(container, markdown) {
-        container.replaceChildren();
-        const lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
-        let index = 0;
+          <section class="settings-section connection-section">
+            <h2>Connection</h2>
+            <div class="connection-detail">
+              <span id="settings-connection-dot" class="connection-indicator"></span>
+              <span id="settings-connection-text">Offline</span>
+            </div>
+          </section>
+        </div>
 
-        while (index < lines.length) {
-          const line = lines[index];
-          if (!line.trim()) {
-            index += 1;
-            continue;
-          }
+        <footer class="settings-footer">
+          <div id="settings-status" class="settings-status" role="status"></div>
+          <button id="settings-save" class="primary-button" type="button" disabled>Save</button>
+        </footer>
+      </section>
 
-          const fence = line.match(/^\s*```([^`]*)$/);
-          if (fence) {
-            const codeLines = [];
-            index += 1;
-            while (index < lines.length && !/^\s*```\s*$/.test(lines[index])) {
-              codeLines.push(lines[index]);
-              index += 1;
-            }
-            if (index < lines.length) index += 1;
-            const pre = document.createElement("pre");
-            const code = document.createElement("code");
-            if (fence[1].trim()) code.dataset.language = fence[1].trim();
-            code.textContent = codeLines.join("\n");
-            pre.appendChild(code);
-            container.appendChild(pre);
-            continue;
-          }
-
-          const heading = line.match(/^\s*(#{1,3})\s+(.+)$/);
-          if (heading) {
-            const title = document.createElement(`h${heading[1].length}`);
-            appendInlineMarkdown(title, heading[2]);
-            container.appendChild(title);
-            index += 1;
-            continue;
-          }
-
-          if (/^\s*>\s?/.test(line)) {
-            const quoteLines = [];
-            while (index < lines.length && /^\s*>\s?/.test(lines[index])) {
-              quoteLines.push(lines[index].replace(/^\s*>\s?/, ""));
-              index += 1;
-            }
-            const quote = document.createElement("blockquote");
-            appendTextLines(quote, quoteLines);
-            container.appendChild(quote);
-            continue;
-          }
-
-          const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
-          const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
-          if (unordered || ordered) {
-            const list = document.createElement(unordered ? "ul" : "ol");
-            const itemPattern = unordered ? /^\s*[-*+]\s+(.+)$/ : /^\s*\d+[.)]\s+(.+)$/;
-            while (index < lines.length) {
-              const item = lines[index].match(itemPattern);
-              if (!item) break;
-              const listItem = document.createElement("li");
-              appendInlineMarkdown(listItem, item[1]);
-              list.appendChild(listItem);
-              index += 1;
-            }
-            container.appendChild(list);
-            continue;
-          }
-
-          const paragraphLines = [line];
-          index += 1;
-          while (
-            index < lines.length &&
-            lines[index].trim() &&
-            !/^\s*```/.test(lines[index]) &&
-            !/^\s*#{1,3}\s+/.test(lines[index]) &&
-            !/^\s*>\s?/.test(lines[index]) &&
-            !/^\s*[-*+]\s+/.test(lines[index]) &&
-            !/^\s*\d+[.)]\s+/.test(lines[index])
-          ) {
-            paragraphLines.push(lines[index]);
-            index += 1;
-          }
-          const paragraph = document.createElement("p");
-          appendTextLines(paragraph, paragraphLines);
-          container.appendChild(paragraph);
-        }
-      }
-
-      async function copyText(text, button) {
-        try {
-          if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
-          await navigator.clipboard.writeText(text);
-        } catch {
-          const fallback = document.createElement("textarea");
-          fallback.value = text;
-          fallback.setAttribute("readonly", "");
-          fallback.style.position = "fixed";
-          fallback.style.opacity = "0";
-          document.body.appendChild(fallback);
-          fallback.select();
-          document.execCommand("copy");
-          fallback.remove();
-        }
-        const original = button.textContent;
-        button.textContent = "Copied ✓";
-        setTimeout(() => { button.textContent = original; }, 1400);
-      }
-
-      function setMessageText(node, text) {
-        node.rawText = text;
-        const content = node.querySelector(".message-content");
-        if (node.classList.contains("agent")) renderMarkdown(content, text);
-        else content.textContent = text;
-      }
-
-      function addMessage(role, text = "") {
-        $("empty").style.display = "none";
-        const node = document.createElement("div");
-        node.className = `message ${role}`;
-        const content = document.createElement("div");
-        content.className = "message-content";
-        node.appendChild(content);
-        if (role === "agent") {
-          const actions = document.createElement("div");
-          actions.className = "message-agent-actions";
-          const copy = document.createElement("button");
-          copy.type = "button";
-          copy.className = "copy-message";
-          copy.textContent = "Copy";
-          copy.title = "Copy this response";
-          copy.addEventListener("click", () => copyText(node.rawText || "", copy));
-          actions.appendChild(copy);
-          node.appendChild(actions);
-        }
-        setMessageText(node, text);
-        $("messages").appendChild(node);
-        $("messages").scrollTop = $("messages").scrollHeight;
-        return node;
-      }
-
-      function showToolStatus(text) {
-        if (!toolStatus) {
-          toolStatus = document.createElement("div");
-          toolStatus.className = "tool-status";
-          toolStatus.innerHTML = '<span class="spinner"></span><span></span>';
-          $("messages").appendChild(toolStatus);
-        }
-        toolStatus.lastElementChild.textContent = text;
-        $("messages").scrollTop = $("messages").scrollHeight;
-      }
-
-      function clearToolStatus() {
-        toolStatus?.remove();
-        toolStatus = null;
-      }
-
-      function bytesToDataUrl(bytes, mimeType) {
-        const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(Object.values(bytes));
-        let binary = "";
-        const chunk = 0x8000;
-        for (let i = 0; i < view.length; i += chunk) {
-          binary += String.fromCharCode(...view.subarray(i, i + chunk));
-        }
-        return `data:${mimeType};base64,${btoa(binary)}`;
-      }
-
-      function send(message) {
-        if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
-      }
-
-      function connect(token) {
-        bridgeToken = token.trim();
-        if (!bridgeToken) return showSetup("Enter the token shown by the bridge.");
-        setConnection(false, "connecting…");
-        socket?.close();
-        socket = new WebSocket(BRIDGE_URL);
-
-        socket.addEventListener("open", () => send({ type: "auth", token: bridgeToken }));
-        socket.addEventListener("close", (event) => {
-          setConnection(false, "offline");
-          if (event.code === 4003) showSetup("Invalid token. Copy the one shown by npm start.");
-        });
-        socket.addEventListener("error", () => showSetup("Bridge unavailable. Run npm start in the project."));
-        socket.addEventListener("message", ({ data }) => handleBridgeMessage(JSON.parse(data)));
-      }
-
-      function handleBridgeMessage(message) {
-        if (message.type === "auth.ok") {
-          parent.postMessage({ pluginMessage: { type: "settings.save-token", token: bridgeToken } }, "*");
-          hideSetup();
-          setConnection(true, "local");
-          if (latestContext) send({ type: "context.update", context: latestContext });
-          return;
-        }
-
-        if (message.type === "models.available") {
-          populateModels(message);
-          return;
-        }
-
-        if (message.type === "agent.delta") {
-          clearToolStatus();
-          if (!activeAgentMessage) activeAgentMessage = addMessage("agent");
-          setMessageText(activeAgentMessage, (activeAgentMessage.rawText || "") + (message.delta || ""));
-          $("messages").scrollTop = $("messages").scrollHeight;
-          return;
-        }
-
-        if (message.type === "agent.message.started") {
-          activeAgentMessage = null;
-          return;
-        }
-
-        if (message.type === "agent.status") {
-          showToolStatus(message.text || "Working on the canvas…");
-          return;
-        }
-
-        if (message.type === "turn.started") {
-          busy = true;
-          setModelControlsDisabled(true);
-          activeAgentMessage = null;
-          $("send").textContent = "Stop";
-          $("send").disabled = false;
-          return;
-        }
-
-        if (message.type === "turn.completed") {
-          busy = false;
-          setModelControlsDisabled(false);
-          clearToolStatus();
-          activeAgentMessage = null;
-          $("send").textContent = "Run";
-          $("send").disabled = false;
-          return;
-        }
-
-        if (message.type === "tool.request") {
-          showToolStatus(`Figma: ${message.tool}`);
-          parent.postMessage({
-            pluginMessage: {
-              type: "tool.run",
-              requestId: message.requestId,
-              tool: message.tool,
-              arguments: message.arguments || {}
-            }
-          }, "*");
-          return;
-        }
-
-        if (message.type === "thread.reset") {
-          $("messages").innerHTML = '<div id="empty" class="empty"><strong>New conversation</strong><span>Select a frame and describe what you want to change.</span></div>';
-          return;
-        }
-
-        if (message.type === "error") {
-          clearToolStatus();
-          busy = false;
-          setModelControlsDisabled(false);
-          $("send").textContent = "Run";
-          addMessage("error", message.message || "Bridge error");
-        }
-      }
-
-      window.onmessage = ({ data }) => {
-        const message = data.pluginMessage;
-        if (!message) return;
-
-        if (message.type === "settings") {
-          bridgeToken = message.token || "";
-          savedModel = message.model || "";
-          savedEffort = message.effort || "";
-          $("token").value = bridgeToken;
-          if (bridgeToken) connect(bridgeToken);
-          return;
-        }
-
-        if (message.type === "context.selection") {
-          latestContext = message.context;
-          const selection = message.context?.selection || [];
-          $("context-bar").textContent = selection.length
-            ? `${message.context.page?.name || "Page"} · ${selection.map((item) => item.name).join(", ")}`
-            : `${message.context?.page?.name || "Page"} · No layer selected`;
-          send({ type: "context.update", context: latestContext });
-          return;
-        }
-
-        if (message.type === "tool.result") {
-          const outgoing = { ...message };
-          if (message.ok && message.result?.kind === "image") {
-            outgoing.result = {
-              kind: "image",
-              imageDataUrl: bytesToDataUrl(message.result.bytes, message.result.mimeType),
-              node: message.result.node
-            };
-          }
-          send(outgoing);
-        }
-      };
-
-      $("connect").addEventListener("click", () => connect($("token").value));
-      $("new-thread").addEventListener("click", () => send({ type: "thread.new" }));
-      $("model-select").addEventListener("change", () => {
-        populateEfforts(savedEffort || $("effort-select").value);
-        saveModelSettings();
-      });
-      $("effort-select").addEventListener("change", saveModelSettings);
-      $("composer").addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (busy) {
-          send({ type: "chat.interrupt" });
-          return;
-        }
-        const text = $("prompt").value.trim();
-        if (!text) return;
-        addMessage("user", text);
-        $("prompt").value = "";
-        busy = true;
-        setModelControlsDisabled(true);
-        $("send").textContent = "Stop";
-        send({
-          type: "chat.prompt",
-          text,
-          model: $("model-select").value,
-          effort: $("effort-select").value
-        });
-      });
-      $("prompt").addEventListener("keydown", (event) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          $("composer").requestSubmit();
-        }
-      });
-
-      parent.postMessage({ pluginMessage: { type: "ui.ready" } }, "*");
-      setConnection(false, "offline");
-    </script>
+      <section id="setup-view" class="view setup-view" aria-label="Connect to local bridge">
+        <div class="setup-content">
+          <h1>Connect to local bridge</h1>
+          <label class="field" for="token">
+            <span>Connection token</span>
+            <input id="token" type="password" placeholder="Paste token" autocomplete="off" />
+          </label>
+          <button id="connect" class="primary-button" type="button">Connect</button>
+          <div id="setup-error" class="setup-error" role="alert"></div>
+        </div>
+      </section>
+    </div>
+    <script>/*__CODEX_CANVAS_SCRIPT__*/</script>
   </body>
 </html>
