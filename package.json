@@ -10,7 +10,7 @@
     "start": "npm run build && node dist/bridge/index.js"
   },
   "dependencies": {
-    "@openai/codex": "0.147.0",
+    "@openai/codex": "0.152.0",
     "lucide": "^1.30.0",
     "ws": "^8.21.3"
   },
