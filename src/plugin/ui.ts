@@ -152,7 +152,9 @@ const effortLabels: Record<string, string> = {
   low: "Low",
   medium: "Medium",
   high: "High",
-  xhigh: "Extra high"
+  xhigh: "Extra high",
+  max: "Max",
+  ultra: "Ultra"
 };
 
 function showView(view: HTMLElement): void {
